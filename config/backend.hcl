@@ -1,4 +1,4 @@
-resource_group_name  = "infrastructureascode-rg"
+resource_group_name  = "tfg_BN_RG"
 storage_account_name = "tfgiacstorage"
 container_name       = "uoc-tfg-state"
 key                  = "terraform_tfg.tfstate"
