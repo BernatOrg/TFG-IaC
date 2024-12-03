@@ -1,5 +1,5 @@
 variable "resource_groups_var" {
-  description = "List of resource groups to be creted"
+  description = "List of resource groups to be created"
   type = list(object({
     location          = string
     managed_by        = optional(string, null)
