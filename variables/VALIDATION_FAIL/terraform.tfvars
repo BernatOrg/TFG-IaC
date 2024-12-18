@@ -28,7 +28,7 @@ storage_accounts_var = [
   /* -------------------infrastructureascode-rg-------------------- */
   {
     access_tier                       = "Cool"
-    account_kind                      = "StorageV2"
+    account_kind                      = "StorageV3"
     account_replication_type          = "GRS"
     account_tier                      = "Standard"
     allowed_copy_scope                = "AAD"

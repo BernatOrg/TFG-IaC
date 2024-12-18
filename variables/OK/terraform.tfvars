@@ -67,11 +67,6 @@ storage_accounts_var = [
       days = 30
     }
 
-    network_rules = {
-      bypass         = ["AzureServices"]
-      default_action = "Allow"
-    }
-
     tags = {
       Project            = "UOC TFG"
       ProjectOwner       = "Bernat Nosas"

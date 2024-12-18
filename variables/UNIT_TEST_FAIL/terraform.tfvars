@@ -29,7 +29,7 @@ storage_accounts_var = [
   {
     access_tier                       = "Cool"
     account_kind                      = "StorageV2"
-    account_replication_type          = "GRS"
+    account_replication_type          = "ZRS"
     account_tier                      = "Standard"
     allowed_copy_scope                = "AAD"
     allow_nested_items_to_be_public   = false
@@ -42,7 +42,7 @@ storage_accounts_var = [
     location                          = "northeurope"
     min_tls_version                   = "TLS1_2"
     name                              = "tfgiacstorage"
-    nfsv3_enabled                     = false
+    nfsv3_enabled                     = true
     public_network_access_enabled     = true
     queue_encryption_key_type         = "Service"
     resource_group_name               = "tfg_BN_RG"

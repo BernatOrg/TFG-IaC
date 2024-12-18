@@ -56,10 +56,10 @@ variable "storage_accounts_var" {
         days = optional(number, 1)
       }), null)
     })
-    network_rules = object({
+    network_rules = optional(object({
       bypass         = optional(list(string), [])
       default_action = string
-    })
+    }), null)
     tags = object({
       Project            = string
       ProjectOwner       = string

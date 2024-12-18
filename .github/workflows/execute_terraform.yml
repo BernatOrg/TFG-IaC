@@ -1,0 +1,277 @@
+name: Terraform-Azure Provisioning Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      tf_variables:
+        type: choice
+        description: 'Escollir el tipus de variables a utilitzar'
+        required: true
+        options:
+          - Process OK
+          - Format Erroni
+          - Validacio Erronia
+          - Test Seguretat Erroni
+          - Unit Test Erroni
+        default: 'Process OK'
+      run_Trivy_testing:
+          type: boolean
+          description: 'Check it if you want to run Trivy testing'
+          default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  working-directory: "."
+
+jobs:
+
+  set_variables_plan:
+    name: Set Variables for Terraform Plan
+    runs-on: ubuntu-latest
+    outputs:
+        variables_path:  ${{ steps.set_environment.outputs.environment }}
+   
+    steps:
+
+      - name: Print Input Variables
+        id: print_inputs
+        run: |
+          echo "tf_variables: ${{inputs.tf_variables}}"
+
+      - name: Set Variables
+        id: set_environment
+        run: |
+            tf_variables="${{inputs.tf_variables}}"
+
+            if [ "$tf_variables" == "Process OK" ]; then
+              echo "variables_path=./variables/OK/terraform.tfvars" >> $GITHUB_OUTPUT
+
+            elif [ "$tf_variables" == "Format Erroni" ]; then
+              echo "variables_path=./variables/FORMAT_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
+
+            elif [ "$tf_variables" == "Validacio Erronia" ]; then
+              echo "variables_path=./variables/VALIDATION_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
+
+            elif [ "$tf_variables" == "Test Seguretat Erroni" ]; then
+              echo "variables_path=./variables/SECURITY_TEST_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
+             
+            elif [ "$tf_variables" == "Unit Test Erroni" ]; then
+              echo "variables_path=ITALY_POWER_BI_PROJECT_PLAN" >> $GITHUB_OUTPUT
+
+            fi
+
+  testing_and_plan:
+    name: Terraform Testing & Plan
+    needs: [set_variables_plan]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "."
+    outputs:
+       plan_result: ${{ steps.execute_plan.outputs.plan_result }}
+
+    steps:
+
+    - name: Print Input Variables
+      id: print_inputs
+      run: |
+        echo "variables_path: ${{needs.set_variables_plan.outputs.variables_path}}"
+   
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+
+    - name: Substitute Placeholders
+      run: |
+        sed -i "s|__BACKEND_SUBSCRIPTION__|${{ secrets.BACKEND_SUBSCRIPTION }}|g" "config/backend.hcl"
+
+        jsonData='${{ toJSON(secrets) }}'
+   
+        echo $jsonData
+
+        echo '${{ toJSON(secrets) }}' | jq '. | keys[]'
+        ARRAY=$(echo "$jsonData" | jq '. | keys[]')
+        for NAME in $ARRAY; do 
+    
+          echo $NAME; 
+
+          WITHOUTQUOTES=${NAME//'"'/'__'}
+          echo $WITHOUTQUOTES; 
+
+          if grep -q "$WITHOUTQUOTES" "${{ steps.set_variables_path.outputs.vars_file_path  }}"; then
+            echo "The placeholder exists"
+            echo $WITHOUTQUOTES; 
+
+            VALUE=$(echo "$jsonData" | jq -r ".$NAME")
+            echo $VALUE; 
+   
+            PASS=$(echo "$VALUE" | sed -e 's/[\/&]/\\&/g')
+            sed -i "s|$WITHOUTQUOTES|$PASS|g" "${{ steps.set_variables_path.outputs.vars_file_path }}"
+
+          fi
+
+        done
+
+      shell: bash
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3.0.0
+      with:
+        terraform_version: 1.9.0
+        terraform_wrapper: false
+
+    - name: 'Azure CLI login'
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: 'Check Login'
+      run: |
+         az account show
+
+    - name: Terraform Init
+      id: init
+      working-directory: ${{ env.working-directory }}
+      env:
+         ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
+         ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+         ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
+      run: terraform init -backend-config="config/backend.hcl"
+
+    - name: Terraform Validate 
+      working-directory: ${{ env.working-directory }}
+      env:
+         ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
+         ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+         ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
+      run: terraform validate
+   
+    - name: Terraform Formatter
+      working-directory: ${{ env.working-directory }}
+      run: terraform fmt -check -list=true -recursive
+
+    - name: Terraform Test 
+      working-directory: ${{ env.working-directory }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
+      run: terraform test -var-file '${{ steps.set_variables_path.outputs.vars_file_path }}'
+
+    - name: Run Trivy vulnerability scanner in IaC mode CLI
+      id: trivy_step
+      if: ${{ inputs.run_Trivy_testing }} 
+      run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.47.0
+          trivy config  --format table --exit-code  1 --severity  MEDIUM,CRITICAL,HIGH --tf-vars ${{ steps.set_variables_path.outputs.vars_file_path  }} ./modules/
+           
+    - name: Terraform Plan   
+      id: execute_plan
+      working-directory: ${{ env.working-directory }}
+      env:
+         ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
+         ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+         ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
+      run: |
+          set +e
+          terraform plan -detailed-exitcode -input=false -out tf.plan -var-file '${{ steps.set_variables_path.outputs.vars_file_path }}'
+          exit_code=$?
+  
+          set -e
+          if [ $exit_code -eq 2 ]; then
+            echo "There are pending changes."
+            echo "plan_result=2" >> $GITHUB_OUTPUT
+          elif [ $exit_code -eq 0 ]; then
+            echo "No changes detected in the Terraform plan."
+            echo "plan_result=0" >> $GITHUB_OUTPUT
+          else
+            echo "Terraform plan failed."
+            echo "plan_result=1" >> $GITHUB_OUTPUT
+          fi
+         
+    - name: Print Exit Code
+      run: |
+          echo ${{ steps.execute_plan.outputs.plan_result}}
+  
+    - name: Generate Artifact
+      if: steps.execute_plan.outputs.plan_result == 2
+      id: generate_artifact
+      run: |
+          zip_artifact="${{ vars.ARTIFACT_NAME }}.tar.gz"
+          echo "zip_artifact=${zip_artifact}" >> $GITHUB_OUTPUT
+          touch ${zip_artifact}
+          tar -czvf ${zip_artifact} --exclude ".git*" --exclude "*.md" --exclude "${zip_artifact}" .
+          path_to_artifact="./${zip_artifact}"
+          echo "path_to_artifact=${path_to_artifact}" >> $GITHUB_OUTPUT
+        
+    - name: Upload Artifact
+      if: steps.execute_plan.outputs.plan_result == 2
+      uses: actions/upload-artifact@v4.3.1
+      with:
+          name: ${{ vars.ARTIFACT_NAME }}
+          path: ${{ steps.generate_artifact.outputs.path_to_artifact }}
+  
+    - name: Write to workflow job summary if no changes
+      if: steps.execute_plan.outputs.plan_result == 0
+      run: |
+          SUMMARY=$'# Deployed on: ${{needs.set_variables_plan.outputs.environment}} :rocket:\n## NO CHANGES DETECTED! APPLY JOB HAS BEEN SKIPPED :end:'
+          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+  
+    - name: Write to workflow job summary if there are errors
+      if: steps.execute_plan.outputs.plan_result == 1
+      run: |
+          SUMMARY=$'# Deployed on: ${{needs.set_variables_plan.outputs.environment}} :rocket:\n## ERROR IN PLAN EXECUTION! :exclamation:\n#  APPLY JOB HAS BEEN SKIPPED :end:'
+          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+       
+  apply:
+    name: Terraform Apply Changes
+    needs: [set_variables_plan,testing_and_plan]
+    if: needs.testing_and_plan.outputs.plan_result == 2
+    runs-on: ubuntu-latest
+    environment: 'APPLY'
+
+    steps:
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.0.0
+        with:
+          terraform_version: 1.9.0
+          terraform_wrapper: false
+
+      - name: 'Azure CLI login'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  
+      - name: 'Check Login'
+        run: |
+            az account show
+      
+      - name: Download Artifact
+        uses: actions/download-artifact@v4.1.4
+        with:
+            name: ${{ vars.ARTIFACT_NAME }}
+            path: ${{ env.working-directory }}
+
+      - name: Set artifact name
+        id: set_artifact_name
+        run: |
+           artifact_name="${{ vars.ARTIFACT_NAME }}.tar.gz"
+           echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT 
+
+      - name: Extract Plan
+        run: tar -xzvf ${{ steps.set_artifact_name.outputs.artifact_name }}
+
+      - name: Terraform Apply     
+        working-directory: ${{ env.working-directory }}
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
+        run: terraform apply -input=false tf.plan

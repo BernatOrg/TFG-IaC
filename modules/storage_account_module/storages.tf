@@ -46,10 +46,13 @@ resource "azurerm_storage_account" "storage" {
     }
 
   }
-  network_rules {
 
-    bypass         = each.value.network_rules.bypass
-    default_action = each.value.network_rules.default_action
+  dynamic "network_rules" {
+    for_each = try(each.value.network_rules, null) != null ? [1] : []
+    content {
+      bypass         = each.value.network_rules.bypass
+      default_action = each.value.network_rules.default_action
+    }
   }
 
 }
