@@ -32,7 +32,7 @@ jobs:
     name: Set Variables for Terraform Plan
     runs-on: ubuntu-latest
     outputs:
-        variables_path:  ${{ steps.set_environment.outputs.environment }}
+        variables_path:  ${{ steps.set_variables_path.outputs.variables_path }}
    
     steps:
 
@@ -41,8 +41,8 @@ jobs:
         run: |
           echo "tf_variables: ${{inputs.tf_variables}}"
 
-      - name: Set Variables
-        id: set_environment
+      - name: Set Variables Path
+        id: set_variables_path
         run: |
             tf_variables="${{inputs.tf_variables}}"
 
