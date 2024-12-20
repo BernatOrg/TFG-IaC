@@ -29,5 +29,4 @@ TFG Desplegament automatitzat i segur amb infraestructura com a codi a Azure
 - **Validacio Erronia** --> Conté una errada en un dels valors d'un atribut.
 - **Test Seguretat Erroni** --> Conté una configuració insegura.
 - **Unit Test Erroni** --> Conté una combinació de valors en els atributs que provoca un error en els test unitaris.
-- **Format Erroni** --> Conté el fitxer de variables mal formatejat.
 

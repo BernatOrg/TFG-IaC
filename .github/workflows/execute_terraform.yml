@@ -12,7 +12,6 @@ on:
           - Validacio Erronia
           - Test Seguretat Erroni
           - Unit Test Erroni
-          - Format Erroni
         default: 'Process OK'
 
 permissions:
@@ -53,9 +52,6 @@ jobs:
              
             elif [ "$tf_variables" == "Unit Test Erroni" ]; then
               echo "variables_path=./variables/UNIT_TEST_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
-
-            elif [ "$tf_variables" == "Format Erroni" ]; then
-              echo "variables_path=./variables/FORMAT_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
 
             fi
 
