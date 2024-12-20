@@ -67,6 +67,7 @@ jobs:
     name: Terraform Testing & Plan
     needs: [set_variables_plan]
     runs-on: ubuntu-latest
+    environment: 'PLAN'
     defaults:
       run:
         working-directory: "."
