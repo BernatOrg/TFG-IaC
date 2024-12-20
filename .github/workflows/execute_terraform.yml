@@ -14,10 +14,6 @@ on:
           - Test Seguretat Erroni
           - Unit Test Erroni
         default: 'Process OK'
-      run_Trivy_testing:
-          type: boolean
-          description: 'Check it if you want to run Trivy testing'
-          default: false
 
 permissions:
   id-token: write
@@ -165,7 +161,6 @@ jobs:
 
     - name: Run Trivy vulnerability scanner in IaC mode CLI
       id: trivy_step
-      if: ${{ inputs.run_Trivy_testing }} 
       run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.47.0
           trivy config  --format table --exit-code  1 --severity  MEDIUM,CRITICAL,HIGH --tf-vars ${{ needs.set_variables_plan.outputs.variables_path  }} ./modules/
