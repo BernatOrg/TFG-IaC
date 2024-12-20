@@ -101,7 +101,7 @@ jobs:
           WITHOUTQUOTES=${NAME//'"'/'__'}
           echo $WITHOUTQUOTES; 
 
-          if grep -q "$WITHOUTQUOTES" "${{ steps.set_variables_path.outputs.vars_file_path  }}"; then
+          if grep -q "$WITHOUTQUOTES" "${{ needs.set_variables_plan.outputs.variables_path  }}"; then
             echo "The placeholder exists"
             echo $WITHOUTQUOTES; 
 
@@ -109,7 +109,7 @@ jobs:
             echo $VALUE; 
    
             PASS=$(echo "$VALUE" | sed -e 's/[\/&]/\\&/g')
-            sed -i "s|$WITHOUTQUOTES|$PASS|g" "${{ steps.set_variables_path.outputs.vars_file_path }}"
+            sed -i "s|$WITHOUTQUOTES|$PASS|g" "${{ needs.set_variables_plan.outputs.variables_path }}"
 
           fi
 
@@ -161,14 +161,14 @@ jobs:
         ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID  }}
         ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
-      run: terraform test -var-file '${{ steps.set_variables_path.outputs.vars_file_path }}'
+      run: terraform test -var-file '${{ needs.set_variables_plan.outputs.variables_path }}'
 
     - name: Run Trivy vulnerability scanner in IaC mode CLI
       id: trivy_step
       if: ${{ inputs.run_Trivy_testing }} 
       run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.47.0
-          trivy config  --format table --exit-code  1 --severity  MEDIUM,CRITICAL,HIGH --tf-vars ${{ steps.set_variables_path.outputs.vars_file_path  }} ./modules/
+          trivy config  --format table --exit-code  1 --severity  MEDIUM,CRITICAL,HIGH --tf-vars ${{ needs.set_variables_plan.outputs.variables_path  }} ./modules/
            
     - name: Terraform Plan   
       id: execute_plan
@@ -179,7 +179,7 @@ jobs:
          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID  }}
       run: |
           set +e
-          terraform plan -detailed-exitcode -input=false -out tf.plan -var-file '${{ steps.set_variables_path.outputs.vars_file_path }}'
+          terraform plan -detailed-exitcode -input=false -out tf.plan -var-file '${{ needs.set_variables_plan.outputs.variables_path }}'
           exit_code=$?
   
           set -e
@@ -216,18 +216,7 @@ jobs:
           name: ${{ vars.ARTIFACT_NAME }}
           path: ${{ steps.generate_artifact.outputs.path_to_artifact }}
   
-    - name: Write to workflow job summary if no changes
-      if: steps.execute_plan.outputs.plan_result == 0
-      run: |
-          SUMMARY=$'# Deployed on: ${{needs.set_variables_plan.outputs.environment}} :rocket:\n## NO CHANGES DETECTED! APPLY JOB HAS BEEN SKIPPED :end:'
-          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
-  
-    - name: Write to workflow job summary if there are errors
-      if: steps.execute_plan.outputs.plan_result == 1
-      run: |
-          SUMMARY=$'# Deployed on: ${{needs.set_variables_plan.outputs.environment}} :rocket:\n## ERROR IN PLAN EXECUTION! :exclamation:\n#  APPLY JOB HAS BEEN SKIPPED :end:'
-          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
-       
+ 
   apply:
     name: Terraform Apply Changes
     needs: [set_variables_plan,testing_and_plan]
