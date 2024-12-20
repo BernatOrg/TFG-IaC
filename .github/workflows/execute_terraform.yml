@@ -241,17 +241,11 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4.1.7
         with:
-            name: ${{ vars.ARTIFACT_NAME }}
+            name: "plan.tar.gz"
             path: ${{ env.working-directory }}
 
-      - name: Set artifact name
-        id: set_artifact_name
-        run: |
-           artifact_name="${{ vars.ARTIFACT_NAME }}.tar.gz"
-           echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT 
-
       - name: Extract Plan
-        run: tar -xzvf ${{ steps.set_artifact_name.outputs.artifact_name }}
+        run: tar -xzvf "plan.tar.gz"
 
       - name: Terraform Apply     
         working-directory: ${{ env.working-directory }}
