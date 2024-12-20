@@ -208,7 +208,7 @@ jobs:
       if: steps.execute_plan.outputs.plan_result == 2
       uses: actions/upload-artifact@v4.3.1
       with:
-          name: ${{ vars.ARTIFACT_NAME }}
+          name: "plan.tar.gz"
           path: ${{ steps.generate_artifact.outputs.path_to_artifact }}
   
  
