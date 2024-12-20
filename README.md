@@ -22,8 +22,7 @@ TFG Desplegament automatitzat i segur amb infraestructura com a codi a Azure
 
 4. Seleccionar sempre **Branch: main** i seleccionar el tipus de desplegament a realitzar
 
-  ![Screenshot 2024-12-20 at 14 49 02](https://github.com/user-attachments/assets/8a82c5fd-a9fe-4dfb-b394-a7c55a44c501)
-
+  ![Screenshot 2024-12-20 at 15 53 35](https://github.com/user-attachments/assets/d2ae96c2-def3-4ddf-a064-692946bf050e)
 
 - **Process OK** --> Realitza tot el procés sense cap mena d'error
 - **Validacio Erronia** --> Conté una errada en un dels valors d'un atribut.
