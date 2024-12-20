@@ -202,7 +202,7 @@ jobs:
       if: steps.execute_plan.outputs.plan_result == 2
       id: generate_artifact
       run: |
-          zip_artifact="${{ vars.ARTIFACT_NAME }}.tar.gz"
+          zip_artifact="plan.tar.gz"
           echo "zip_artifact=${zip_artifact}" >> $GITHUB_OUTPUT
           touch ${zip_artifact}
           tar -czvf ${zip_artifact} --exclude ".git*" --exclude "*.md" --exclude "${zip_artifact}" .
