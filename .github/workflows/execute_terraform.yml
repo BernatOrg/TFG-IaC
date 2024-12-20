@@ -5,11 +5,10 @@ on:
     inputs:
       tf_variables:
         type: choice
-        description: 'Escollir el tipus de variables a utilitzar'
+        description: 'Escollir el tipus deplegament a utilitzar'
         required: true
         options:
           - Process OK
-          - Format Erroni
           - Validacio Erronia
           - Test Seguretat Erroni
           - Unit Test Erroni
@@ -44,9 +43,6 @@ jobs:
 
             if [ "$tf_variables" == "Process OK" ]; then
               echo "variables_path=./variables/OK/terraform.tfvars" >> $GITHUB_OUTPUT
-
-            elif [ "$tf_variables" == "Format Erroni" ]; then
-              echo "variables_path=./variables/FORMAT_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
 
             elif [ "$tf_variables" == "Validacio Erronia" ]; then
               echo "variables_path=./variables/VALIDATION_FAIL/terraform.tfvars" >> $GITHUB_OUTPUT
