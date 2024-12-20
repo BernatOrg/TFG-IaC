@@ -35,14 +35,14 @@ storage_accounts_var = [
     allow_nested_items_to_be_public   = false
     cross_tenant_replication_enabled  = false
     default_to_oauth_authentication   = false
-    enable_https_traffic_only         = true
+          enable_https_traffic_only         = true
     infrastructure_encryption_enabled = false
     is_hns_enabled                    = false
     large_file_share_enabled          = false
     location                          = "northeurope"
     min_tls_version                   = "TLS1_2"
     name                              = "tfgiacstorage"
-    nfsv3_enabled                     = false
+         nfsv3_enabled                     = false
     public_network_access_enabled     = true
     queue_encryption_key_type         = "Service"
     resource_group_name               = "tfg_BN_RG"
@@ -51,10 +51,10 @@ storage_accounts_var = [
     table_encryption_key_type         = "Service"
 
     blob_properties = {
-      change_feed_enabled           = true
-      change_feed_retention_in_days = 90
+        change_feed_enabled           = true
+       change_feed_retention_in_days = 90
       last_access_time_enabled      = true
-      versioning_enabled            = true
+              versioning_enabled            = true
       container_delete_retention_policy = {
         days = 7
       }
@@ -73,10 +73,10 @@ storage_accounts_var = [
     }
 
     tags = {
-      Project            = "UOC TFG"
+           Project            = "UOC TFG"
       ProjectOwner       = "Bernat Nosas"
       Environment        = "TEST"
-      Description        = "Storage account for final computer science degree project"
+           Description        = "Storage account for final computer science degree project"
       Version            = "1.0.0"
       ManagedByTerraform = "Yes"
     }
